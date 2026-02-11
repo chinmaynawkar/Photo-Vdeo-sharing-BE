@@ -1,0 +1,14 @@
+[project]
+name = "fast-api"
+version = "0.1.0"
+description = "FastAPI project with uv"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "fastapi-users[sqlalchemy]>=15.0.4",
+    "fastapi[standard]>=0.115.0",
+    "imagekitio>=5.2.0",
+    "python-dotenv>=1.2.1",
+    "uvicorn[standard]>=0.40.0",
+]
