@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from app.schemas.post import Post, PostCreate, PostUpdate
 
 app = FastAPI()
 
@@ -51,4 +52,17 @@ def get_post(id: int):
     return text_posts.get(id)
 
 
-# How to use query parameters
+# This decorator tells FastAPI: Whenever someone sends a POST request to /posts, use the function below.
+@app.post("/posts") 
+ # This function runs when a POST request comes to /posts. FastAPI automatically takes JSON from the request body
+ # and turns it into a PostCreate object (with title & content fields). 
+def create_post(post: PostCreate) -> PostCreate: # -> means the function returns a PostCreate object for documentation purposes
+    # Create a new dictionary for the post using the title and content sent by the client.
+    new_post = {"title": post.title, "content": post.content}  # This line makes a new post using the data from the request.
+    
+    # Find the highest existing post ID so the new post can have a unique ID. 
+    # max(text_posts.keys()) gets the highest post ID number.
+    # We then add 1, so the new post always gets the next available ID.
+    text_posts[max(text_posts.keys()) + 1] = new_post 
+    # FastAPI will turn this Python dictionary into JSON automatically.
+    return {"message": "Post created successfully", "post": new_post} 
