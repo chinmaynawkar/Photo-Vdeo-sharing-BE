@@ -1,7 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from app.schemas.post import Post, PostCreate, PostUpdate
+from app.db.db import create_db_and_tables, get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create database tables
+    await create_db_and_tables()
+    # Yield control back to FastAPI to start the server
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # when we call api we talk with JSON for that we use Pydantic models or python dictionaries
 
