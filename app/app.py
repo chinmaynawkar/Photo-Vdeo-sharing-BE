@@ -1,30 +1,36 @@
-from fastapi import FastAPI, HTTPException
-from app.schemas.post import Post, PostCreate, PostUpdate
-from app.db.db import create_db_and_tables, get_async_session
-from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+
+from app.core.config import UPLOAD_DIR
+from app.db.db import create_db_and_tables
+from app.schemas.post import Post, PostCreate, PostUpdate
+from app.routers.files import router as files_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create database tables
+    """
+    App startup/shutdown lifecycle.
+
+    Creates required database tables and upload storage directory.
+    """
     await create_db_and_tables()
-    # Yield control back to FastAPI to start the server
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     yield
 
 app = FastAPI(lifespan=lifespan)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
-# when we call api we talk with JSON for that we use Pydantic models or python dictionaries
+# Include domain routers (single app, modular routes)
+app.include_router(
+    files_router,
+    tags=["Files"],
+)
 
-# This is a simple in-memory 'database' (just a Python dict)
-# Keys = post IDs, Values = dictionary with title and content
-text_posts = {
-    1: {"title": "Welcome to FastAPI", "content": "This is the first mock post."},
-    2: {"title": "Learning FastAPI", "content": "FastAPI makes building APIs fun and easy."},
-    3: {"title": "Mock Data Example", "content": "These posts are mock data for development purposes."},
-    4: {"title": "Async Endpoints", "content": "You can write async endpoints with FastAPI for speed."},
-    5: {"title": "Why FastAPI?", "content": "Because it's fast and uses modern Python features!"},
-}
-
+# In-memory store for legacy text posts (GET/POST /posts). Replace with DB when ready.
+text_posts: dict[int, dict] = {1: {"title": "First", "content": "Hello"}}
 
 # Route: GET /posts
 # - Returns all posts as JSON.
@@ -73,6 +79,7 @@ def create_post(post: PostCreate) -> PostCreate: # -> means the function returns
     # Find the highest existing post ID so the new post can have a unique ID. 
     # max(text_posts.keys()) gets the highest post ID number.
     # We then add 1, so the new post always gets the next available ID.
-    text_posts[max(text_posts.keys()) + 1] = new_post 
+    next_id = max(text_posts.keys(), default=0) + 1
+    text_posts[next_id] = new_post 
     # FastAPI will turn this Python dictionary into JSON automatically.
     return {"message": "Post created successfully", "post": new_post} 
